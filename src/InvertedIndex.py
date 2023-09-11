@@ -3,6 +3,7 @@ import json
 import nltk
 import time
 nltk.download('stopwords')
+nltk.download('punkt')
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
@@ -97,6 +98,7 @@ class InvertedIndex:
         return doc_content['content']
 
     def loadDocuments(self):
+        start = time.time()
         docs_names = self.getDocsNames()
         if not docs_names:
             print("[InvertedIndex] No documents found!\n")
@@ -110,6 +112,8 @@ class InvertedIndex:
             doc = self.getDocContent(doc_name)
             self.processDoc(doc, docID)
             print(f"[InvertedIndex] Document '{doc_name}' processed!")
+        end = time.time()
+        print(f"Elapsed time to process documents: {end - start} seconds!")
 
     def tokenize(self, doc, stemming=False):
         words = word_tokenize(doc)
@@ -146,7 +150,7 @@ class InvertedIndex:
     def addToPostings(self, word_count, docID):
         for term_id in word_count.keys():
             count = word_count[term_id]
-            if self.tokenID_to_index.get(term_id, -1) == -1:
+            if self.tokenID_to_index.get(str(term_id), -1) == -1:
                 self.tokenID_to_index[str(term_id)] = []
             self.tokenID_to_index[str(term_id)].append(docID)
             self.tokenID_to_index[str(term_id)].append(count)
