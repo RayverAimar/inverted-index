@@ -1,6 +1,7 @@
 import os
 import json
 import nltk
+import time
 nltk.download('stopwords')
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -104,8 +105,8 @@ class InvertedIndex:
             if self.docName_to_docID.get(doc_name, -1) != -1:
                 continue
             docID = len(self.docName_to_docID)
-            self.docName_to_docID[doc_name] = docID
-            self.docID_to_name[docID] = doc_name
+            self.docName_to_docID[str(doc_name)] = docID
+            self.docID_to_name[str(docID)] = doc_name
             doc = self.getDocContent(doc_name)
             self.processDoc(doc, docID)
             print(f"[InvertedIndex] Document '{doc_name}' processed!")
@@ -138,20 +139,19 @@ class InvertedIndex:
             else:
                 id = len(self.token_to_tokenID)
                 self.token_to_tokenID[token]=id
-                self.tokenID_to_token[id]=token
-                tokenIDs.append(id)
+                self.tokenID_to_token[str(id)]=token
+                tokenIDs.append(str(id))
         return tokenIDs
     
     def addToPostings(self, word_count, docID):
         for term_id in word_count.keys():
             count = word_count[term_id]
             if self.tokenID_to_index.get(term_id, -1) == -1:
-                self.tokenID_to_index[term_id] = []
-            self.tokenID_to_index[term_id].append(docID)
-            self.tokenID_to_index[term_id].append(count)
+                self.tokenID_to_index[str(term_id)] = []
+            self.tokenID_to_index[str(term_id)].append(docID)
+            self.tokenID_to_index[str(term_id)].append(count)
     
     def processDoc(self, doc, docID):
-        #print(doc)
         tokens = self.tokenize(doc, stemming=True)
         tokenIDs = self.convertTokensToIDs(tokens)
         word_count = self.countWords(tokenIDs)
@@ -160,6 +160,8 @@ class InvertedIndex:
     def query(self, words):
         tokens = self.tokenize(words, stemming=True)
         not_stemmed_tokens = self.tokenize(words, stemming=False)
+        results = 0
+        start = time.time()
         for i, token in enumerate(tokens):
             print(f'Current word: {not_stemmed_tokens[i]}')
             if self.token_to_tokenID.get(token, -1) == -1:
@@ -167,8 +169,10 @@ class InvertedIndex:
                 continue
             ocurrences = self.tokenID_to_index[str(self.token_to_tokenID[token])]
             for idx in range(0, len(ocurrences), 2):
+                results+=1
                 print(f'\tDocument {self.docID_to_name[str(ocurrences[idx])]} got this word {ocurrences[idx+1]} times.')
-        print()
+        end = time.time()
+        print(f"\nAbout {results} results ({end-start})")
             
     def run(self):
         while True:
@@ -182,8 +186,7 @@ class InvertedIndex:
                 query_words = input("Enter your query: ")
                 self.query(query_words)
             elif option == 2:
-                # Look for non-tracked documents in folder
-                pass
+                self.loadDocuments()
             elif option == 3:
                 os.system('cls' if os.name == 'nt' else 'clear')
                 self.save()
